@@ -4,13 +4,14 @@ import torch
 
 app = Flask(__name__)
 
-# Hugging Face model path (replace with your model's name)
+# Hugging Face model path
 MODEL_NAME = "bc0985/Fake_Job_LLM"
 
-# Load model and tokenizer
-tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+# Load model and tokenizer from the "check" folder
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, subfolder="check")
 model = AutoModelForCausalLM.from_pretrained(
     MODEL_NAME,
+    subfolder="check",  # Specify the subfolder where the model is stored
     device_map="auto",
     torch_dtype=torch.float16  # Use float16 for lower memory usage
 )
