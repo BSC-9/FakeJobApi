@@ -1,14 +1,12 @@
-import torch
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
-from pyngrok import ngrok
-import threading
+import torch
 
 app = Flask(__name__)
 CORS(app)
 
-# Path where the model is stored (Modify if needed)
+# Path where you uploaded your model (modify if needed)
 model_path = "bc0985/Fake_Job_LLM"
 
 # Load tokenizer and model
@@ -53,17 +51,6 @@ def predict():
     job_listing = data.get("job_listing", "")
     prediction = run_inference(job_listing)
     return jsonify({"Prediction": prediction})
-
-# Set up ngrok with authentication token
-NGROK_AUTH_TOKEN = "2uAjnEtoTHbPDZBVnosNV7iNCZl_4MDuWL5Jdp1XRm7Cp83Dr"  # Replace with your actual token
-ngrok.set_auth_token(NGROK_AUTH_TOKEN)
-
-# Start ngrok tunnel with threading
-def run_ngrok():
-    public_url = ngrok.connect(5000)
-    print(f"Public URL: {public_url}")
-
-threading.Thread(target=run_ngrok, daemon=True).start()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
