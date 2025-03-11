@@ -1,6 +1,6 @@
 import os
 from flask import Flask, request, jsonify
-from google import genai
+import google.generativeai as genai
 from google.genai import types
 
 API_KEY = "AIzaSyBrYh2jmIjEKJAhtaZdWxi0CGhv1Ed4E50"
