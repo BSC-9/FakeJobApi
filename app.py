@@ -1,56 +1,54 @@
+import os
 from flask import Flask, request, jsonify
-from flask_cors import CORS
-from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
-import torch
+from google import genai
+from google.genai import types
+
+API_KEY = "AIzaSyBrYh2jmIjEKJAhtaZdWxi0CGhv1Ed4E50"
+
+client = genai.Client(api_key=API_KEY)
+model = "gemini-2.0-flash"  # Using Gemini 2.0 Flash for fast responses
 
 app = Flask(__name__)
-CORS(app)
 
-# Path where you uploaded your model (modify if needed)
-model_path = "bc0985/Fake_Job_LLM"
+def generate_response(input_text):
+    """Generates a response to verify if a job is fake or genuine."""
+    
+    input_text += " Determine if the job information is fake or genuine in percentages with a one-line explanation. Keep the response under 25 words."
 
-# Load tokenizer and model
-tokenizer = AutoTokenizer.from_pretrained(model_path)
-model = AutoModelForCausalLM.from_pretrained(
-    model_path,
-    device_map="auto",
-    torch_dtype=torch.float16
-)
+    contents = [
+        types.Content(
+            role="user",
+            parts=[types.Part.from_text(text=input_text)],
+        ),
+    ]
 
-tokenizer.pad_token = tokenizer.eos_token
-tokenizer.padding_side = "right"
+    generate_content_config = types.GenerateContentConfig(
+        temperature=1,
+        top_p=0.95,
+        top_k=40,
+        max_output_tokens=100,  # Limit response size
+        response_mime_type="text/plain",
+    )
 
-# Define the pipeline globally
-pipe = pipeline(
-    "text-generation",
-    model=model,
-    tokenizer=tokenizer,
-    max_new_tokens=100,
-    temperature=0.7,
-    top_p=0.9,
-    do_sample=True,
-    repetition_penalty=1.2,
-)
+    response = client.models.generate_content(
+        model=model,
+        contents=contents,
+        config=generate_content_config,
+    )
 
-# Function to classify job listings
-def run_inference(job_listing):
-    instruction = "Classify whether the following job listing is real or fake. Provide your reasoning."
-    prompt = f"{instruction}\n\n{job_listing}\n\nAnswer:"
+    return response.text.strip().replace('•', '*')
 
-    output = pipe(prompt)
-    generated_text = output[0]["generated_text"]
-
-    if "Answer:" in generated_text:
-        return generated_text.split("Answer:")[-1].strip()
-    else:
-        return generated_text.strip()
-
-@app.route('/predict', methods=['POST'])
-def predict():
+@app.route("/check-job", methods=["POST"])
+def check_job():
+    """API endpoint to check if a job is fake or genuine."""
     data = request.json
-    job_listing = data.get("job_listing", "")
-    prediction = run_inference(job_listing)
-    return jsonify({"Prediction": prediction})
+    job_details = data.get("job_details", "")
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    if not job_details:
+        return jsonify({"error": "Job details are required"}), 400
+
+    result = generate_response(job_details)
+    return jsonify({"result": result})
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)
