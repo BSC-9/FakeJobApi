@@ -1,11 +1,3 @@
 flask
-flask_cors
-torch
-transformers
-datasets
-peft
-trl
-accelerate
-bitsandbytes
-pyngrok
-ngrok
+google-generativeai
+gunicorn  # Required for production deployment
