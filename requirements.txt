@@ -1,9 +1,11 @@
 flask
-flask-cors
+flask_cors
 torch
 transformers
-pyngrok
+datasets
+peft
+trl
 accelerate
 bitsandbytes
-trl
-datasets
+pyngrok
+ngrok
