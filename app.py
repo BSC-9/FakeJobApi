@@ -1,13 +1,16 @@
 import os
+import google.generativeai as genai
+import google.generativeai.types as types
 from flask import Flask, request, jsonify
-from google import genai
-from google.genai import types
 
-API_KEY = "AIzaSyBrYh2jmIjEKJAhtaZdWxi0CGhv1Ed4E50"
+# Load API key securely
+API_KEY = "AIzaSyBrYh2jmIjEKJAhtaZdWxi0CGhv1Ed4E50"  # Replace with your actual API key
+genai.configure(api_key=API_KEY)  # ✅ Correct way to set API key
 
-client = genai.Client(api_key=API_KEY)
-model = "gemini-2.0-flash"  # Using Gemini 2.0 Flash for fast responses
+# Initialize model
+model = genai.GenerativeModel("gemini-2.0-flash")
 
+# Initialize Flask app
 app = Flask(__name__)
 
 def generate_response(input_text):
@@ -15,28 +18,18 @@ def generate_response(input_text):
     
     input_text += " Determine if the job information is fake or genuine in percentages with a one-line explanation. Keep the response under 25 words."
 
-    contents = [
-        types.Content(
-            role="user",
-            parts=[types.Part.from_text(text=input_text)],
+    response = model.generate_content(
+        input_text,
+        generation_config=types.GenerationConfig(
+            temperature=1,
+            top_p=0.95,
+            top_k=40,
+            max_output_tokens=100,
+            response_mime_type="text/plain",
         ),
-    ]
-
-    generate_content_config = types.GenerateContentConfig(
-        temperature=1,
-        top_p=0.95,
-        top_k=40,
-        max_output_tokens=100,  # Limit response size
-        response_mime_type="text/plain",
     )
 
-    response = client.models.generate_content(
-        model=model,
-        contents=contents,
-        config=generate_content_config,
-    )
-
-    return response.text.strip().replace('•', '*')
+    return response.text.strip().replace('•', '*')  # Clean response
 
 @app.route("/check-job", methods=["POST"])
 def check_job():
@@ -50,5 +43,6 @@ def check_job():
     result = generate_response(job_details)
     return jsonify({"result": result})
 
+# Run the Flask app
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
